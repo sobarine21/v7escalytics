@@ -71,68 +71,6 @@ features = {
     "metadata_extraction": True,
 }
 
-st.sidebar.title("Feature Selection")
-for feature in features:
-    features[feature] = st.sidebar.checkbox(f"Enable {feature.replace('_', ' ').title()}", value=features[feature])
-
-email_content = st.text_area("📩 Paste your email content here:", height=200)
-MAX_EMAIL_LENGTH = 2000
-
-uploaded_file = st.file_uploader("📎 Upload attachment for analysis (optional):", type=["txt", "pdf", "docx", "eml", "msg"])
-uploaded_email_file = st.file_uploader("📧 Upload email for thread analysis:", type=["eml", "msg"])
-
-scenario_options = [
-    "Customer Complaint",
-    "Product Inquiry",
-    "Billing Issue",
-    "Technical Support Request",
-    "General Feedback",
-    "Order Status",
-    "Shipping Delay",
-    "Refund Request",
-    "Product Return",
-    "Product Exchange",
-    "Payment Issue",
-    "Subscription Inquiry",
-    "Account Recovery",
-    "Account Update Request",
-    "Cancellation Request",
-    "Warranty Claim",
-    "Product Defect Report",
-    "Delivery Problem",
-    "Product Availability",
-    "Store Locator",
-    "Service Appointment Request",
-    "Installation Assistance",
-    "Upgrade Request",
-    "Compatibility Issue",
-    "Product Feature Request",
-    "Product Suggestions",
-    "Customer Loyalty Inquiry",
-    "Discount Inquiry",
-    "Coupon Issue",
-    "Service Level Agreement (SLA) Issue",
-    "Invoice Clarification",
-    "Tax Inquiry",
-    "Refund Policy Inquiry",
-    "Order Modification Request",
-    "Credit Card Authorization Issue",
-    "Security Inquiry",
-    "Privacy Concern",
-    "Product Manual Request",
-    "Shipping Address Change",
-    "Customer Support Availability Inquiry",
-    "Live Chat Issue",
-    "Email Support Response Inquiry",
-    "Online Payment Gateway Issue",
-    "E-commerce Website Bug Report",
-    "Technical Documentation Request",
-    "Mobile App Issue",
-    "Software Update Request",
-    "Product Recall Notification",
-    "Urgent Request"
-]
-
 selected_scenario = st.selectbox("Select a scenario for suggested response:", scenario_options)
 
 @st.cache_data(ttl=3600)
@@ -164,7 +102,7 @@ def analyze_phishing_links(email_content):
     urls = re.findall(r'(https?://\S+)', email_content)
     for url in urls:
         for keyword in phishing_keywords:
-            if keyword.lower() in url.lower():
+            if keyword.lower() in url.lower()):
                 phishing_links.append(url)
     return phishing_links
 
@@ -174,7 +112,7 @@ def detect_sensitive_information(email_content):
         "email_address": r"[\w\.-]+@[\w\.-]+\.\w+",
         "credit_card": r"\b(?:\d[ -]*?){13,16}\b"
     }
-    
+
     sensitive_data = {}
     for key, pattern in sensitive_info_patterns.items():
         matches = re.findall(pattern, email_content)
@@ -234,32 +172,17 @@ def visualize_argument_mining(argument_mining):
     arguments = argument_mining.split("\n")
     arguments = [arg for arg in arguments if arg.strip()]
     data = pd.DataFrame({"Argument": arguments})
-    plt.figure(figsize=(10, 6))
-    sns.countplot(y="Argument", data=data, palette="viridis")
-    plt.title("Argument Mining Results")
-    plt.xlabel("Count")
-    plt.ylabel("Arguments")
-    st.pyplot(plt)
+    st.bar_chart(data["Argument"].value_counts())
 
 def visualize_conflict_detection(conflict_detection):
     conflicts = conflict_detection.split("\n")
     conflicts = [conflict for conflict in conflicts if conflict.strip()]
     data = pd.DataFrame({"Conflict": conflicts})
-    plt.figure(figsize=(10, 6))
-    sns.countplot(y="Conflict", data=data, palette="Reds")
-    plt.title("Conflict Detection Results")
-    plt.xlabel("Count")
-    plt.ylabel("Conflicts")
-    st.pyplot(plt)
+    st.bar_chart(data["Conflict"].value_counts())
 
 def visualize_metrics(metrics, title, xlabel, ylabel, palette):
     data = pd.DataFrame(metrics.items(), columns=[xlabel, ylabel])
-    plt.figure(figsize=(10, 6))
-    sns.barplot(x=xlabel, y=ylabel, data=data, palette=palette)
-    plt.title(title)
-    plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
-    st.pyplot(plt)
+    st.bar_chart(data.set_index(xlabel))
 
 if (email_content or uploaded_file or uploaded_email_file) and st.button("🔍 Generate Insights"):
     try:
