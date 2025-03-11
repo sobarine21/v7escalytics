@@ -11,3 +11,5 @@ pandas
 matplotlib
 seaborn
 gtts
+easyocr
+pptx
