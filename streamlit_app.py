@@ -19,6 +19,7 @@ from datetime import datetime
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
+from gtts import gTTS
 
 genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
 
@@ -49,27 +50,79 @@ features = {
     "tone": True,
     "urgency": False,
     "task_extraction": True,
-    "subject_recommendation": True,
-    "category": True,
-    "politeness": True,
-    "emotion": True,
-    "spam_check": True,
-    "readability": True,
-    "root_cause": True,
-    "clarity": True,
-    "best_response_time": True,
     "scenario_responses": True,
     "attachment_analysis": True,
-    "complexity_reduction": True,
     "phishing_detection": True,
     "sensitive_info_detection": True,
     "confidentiality_rating": True,
-    "attachment_summarization": True,
+    "complexity_reduction": True,
     "bias_detection": True,
     "conflict_detection": True,
     "argument_mining": True,
     "metadata_extraction": True,
 }
+
+st.sidebar.title("Feature Selection")
+for feature in features:
+    features[feature] = st.sidebar.checkbox(f"Enable {feature.replace('_', ' ').title()}", value=features[feature])
+
+email_content = st.text_area("📩 Paste your email content here:", height=200)
+MAX_EMAIL_LENGTH = 2000
+
+uploaded_file = st.file_uploader("📎 Upload attachment for analysis (optional):", type=["txt", "pdf", "docx", "eml", "msg"])
+uploaded_email_file = st.file_uploader("📧 Upload email for thread analysis:", type=["eml", "msg"])
+
+scenario_options = [
+    "Customer Complaint",
+    "Product Inquiry",
+    "Billing Issue",
+    "Technical Support Request",
+    "General Feedback",
+    "Order Status",
+    "Shipping Delay",
+    "Refund Request",
+    "Product Return",
+    "Product Exchange",
+    "Payment Issue",
+    "Subscription Inquiry",
+    "Account Recovery",
+    "Account Update Request",
+    "Cancellation Request",
+    "Warranty Claim",
+    "Product Defect Report",
+    "Delivery Problem",
+    "Product Availability",
+    "Store Locator",
+    "Service Appointment Request",
+    "Installation Assistance",
+    "Upgrade Request",
+    "Compatibility Issue",
+    "Product Feature Request",
+    "Product Suggestions",
+    "Customer Loyalty Inquiry",
+    "Discount Inquiry",
+    "Coupon Issue",
+    "Service Level Agreement (SLA) Issue",
+    "Invoice Clarification",
+    "Tax Inquiry",
+    "Refund Policy Inquiry",
+    "Order Modification Request",
+    "Credit Card Authorization Issue",
+    "Security Inquiry",
+    "Privacy Concern",
+    "Product Manual Request",
+    "Shipping Address Change",
+    "Customer Support Availability Inquiry",
+    "Live Chat Issue",
+    "Email Support Response Inquiry",
+    "Online Payment Gateway Issue",
+    "E-commerce Website Bug Report",
+    "Technical Documentation Request",
+    "Mobile App Issue",
+    "Software Update Request",
+    "Product Recall Notification",
+    "Urgent Request"
+]
 
 selected_scenario = st.selectbox("Select a scenario for suggested response:", scenario_options)
 
@@ -108,11 +161,11 @@ def analyze_phishing_links(email_content):
 
 def detect_sensitive_information(email_content):
     sensitive_info_patterns = {
-        "phone_number": r"(\+?\d{1,2}\s?)?(\(?\d{3}\)?|\d{3})[\s\-]?\d{3}[\\s\-]?\d{4}",
+        "phone_number": r"(\+?\d{1,2}\s?)?(\(?\d{3}\)?|\d{3})[\s\-]?\d{3}[\s\-]?\d{4}",
         "email_address": r"[\w\.-]+@[\w\.-]+\.\w+",
         "credit_card": r"\b(?:\d[ -]*?){13,16}\b"
     }
-
+    
     sensitive_data = {}
     for key, pattern in sensitive_info_patterns.items():
         matches = re.findall(pattern, email_content)
@@ -162,31 +215,44 @@ def extract_email_metadata(email_file):
     except Exception as e:
         return f"Error extracting metadata: {e}"
 
-def countdown_timer(duration):
-    with st.spinner("Processing..."):
-        for i in range(duration, 0, -1):
-            st.write(f"⏳ {i} seconds remaining...")
-            time.sleep(1)
+def progress_bar(duration):
+    progress = st.progress(0)
+    for i in range(duration):
+        time.sleep(1)
+        progress.progress((i + 1) / duration)
 
 def visualize_argument_mining(argument_mining):
     arguments = argument_mining.split("\n")
     arguments = [arg for arg in arguments if arg.strip()]
     data = pd.DataFrame({"Argument": arguments})
-    st.bar_chart(data["Argument"].value_counts())
+    plt.figure(figsize=(10, 6))
+    sns.countplot(y="Argument", data=data, palette="viridis")
+    plt.title("Argument Mining Results")
+    plt.xlabel("Count")
+    plt.ylabel("Arguments")
+    st.pyplot(plt)
 
 def visualize_conflict_detection(conflict_detection):
     conflicts = conflict_detection.split("\n")
     conflicts = [conflict for conflict in conflicts if conflict.strip()]
     data = pd.DataFrame({"Conflict": conflicts})
-    st.bar_chart(data["Conflict"].value_counts())
+    plt.figure(figsize=(10, 6))
+    sns.countplot(y="Conflict", data=data, palette="Reds")
+    plt.title("Conflict Detection Results")
+    plt.xlabel("Count")
+    plt.ylabel("Conflicts")
+    st.pyplot(plt)
 
-def visualize_metrics(metrics, title, xlabel, ylabel, palette):
-    data = pd.DataFrame(metrics.items(), columns=[xlabel, ylabel])
-    st.bar_chart(data.set_index(xlabel))
+def text_to_speech(text):
+    tts = gTTS(text)
+    tts_bytes = BytesIO()
+    tts.write_to_fp(tts_bytes)
+    tts_bytes.seek(0)
+    return tts_bytes
 
 if (email_content or uploaded_file or uploaded_email_file) and st.button("🔍 Generate Insights"):
     try:
-        countdown_timer(5)
+        progress_bar(5)
 
         if uploaded_email_file:
             msg = BytesParser(policy=policy.default).parsebytes(uploaded_email_file.getvalue())
@@ -204,8 +270,6 @@ if (email_content or uploaded_file or uploaded_email_file) and st.button("🔍 G
                     future_highlights = executor.submit(get_ai_response, "Highlight key points:\n\n", email_content) if features["highlights"] else None
                     future_tone = executor.submit(get_ai_response, "Detect the tone of this email:\n\n", email_content) if features["tone"] else None
                     future_tasks = executor.submit(get_ai_response, "List actionable tasks:\n\n", email_content) if features["task_extraction"] else None
-                    future_subject = executor.submit(get_ai_response, "Suggest a professional subject line:\n\n", email_content) if features["subject_recommendation"] else None
-                    future_clarity = executor.submit(get_ai_response, "Rate the clarity of this email:\n\n", email_content) if features["clarity"] else None
                     future_complexity_reduction = executor.submit(get_ai_response, "Explain this email in the simplest way possible:\n\n", email_content) if features["complexity_reduction"] else None
 
                     scenario_prompt = f"Generate a response for a {selected_scenario.lower()}:\n\n"
@@ -234,8 +298,6 @@ if (email_content or uploaded_file or uploaded_email_file) and st.button("🔍 G
                     highlights = future_highlights.result() if future_highlights else None
                     tone = future_tone.result() if future_tone else None
                     tasks = future_tasks.result() if future_tasks else None
-                    subject_recommendation = future_subject.result() if future_subject else None
-                    clarity_score = future_clarity.result() if future_clarity else None
                     readability_score = get_readability(email_content)
                     complexity_reduction = future_complexity_reduction.result() if future_complexity_reduction else None
                     scenario_response = future_scenario_response.result() if future_scenario_response else None
@@ -247,80 +309,59 @@ if (email_content or uploaded_file or uploaded_email_file) and st.button("🔍 G
                 if summary:
                     st.subheader("📌 Email Summary")
                     st.write(summary)
-                    visualize_metrics({"Summary Length": len(summary)}, "Summary Metrics", "Metric", "Value", "Blues")
 
                 if response:
                     st.subheader("✉️ Suggested Response")
                     st.write(response)
-                    visualize_metrics({"Response Length": len(response)}, "Response Metrics", "Metric", "Value", "Greens")
 
                 if highlights:
                     st.subheader("🔑 Key Highlights")
                     st.write(highlights)
-                    visualize_metrics({"Highlights Length": len(highlights)}, "Highlights Metrics", "Metric", "Value", "Purples")
 
                 if features["sentiment"]:
                     st.subheader("💬 Sentiment Analysis")
                     sentiment = get_sentiment(email_content)
                     sentiment_label = "Positive" if sentiment > 0 else "Negative" if sentiment < 0 else "Neutral"
                     st.write(f"**Sentiment:** {sentiment_label} (Polarity: {sentiment:.2f})")
-                    visualize_metrics({"Sentiment Polarity": sentiment}, "Sentiment Metrics", "Metric", "Value", "Oranges")
 
                 if tone:
                     st.subheader("🎭 Email Tone")
                     st.write(tone)
-                    visualize_metrics({"Tone Length": len(tone)}, "Tone Metrics", "Metric", "Value", "Reds")
 
                 if tasks:
                     st.subheader("📝 Actionable Tasks")
                     st.write(tasks)
-                    visualize_metrics({"Tasks Length": len(tasks)}, "Tasks Metrics", "Metric", "Value", "Greens")
-
-                if subject_recommendation:
-                    st.subheader("📬 Subject Line Recommendation")
-                    st.write(subject_recommendation)
-                    visualize_metrics({"Subject Length": len(subject_recommendation)}, "Subject Metrics", "Metric", "Value", "Blues")
-
-                if clarity_score:
-                    st.subheader("🔍 Email Clarity Score")
-                    st.write(clarity_score)
-                    visualize_metrics({"Clarity Score": clarity_score}, "Clarity Metrics", "Metric", "Value", "Purples")
 
                 if complexity_reduction:
                     st.subheader("🔽 Simplified Explanation")
                     st.write(complexity_reduction)
-                    visualize_metrics({"Complexity Reduction Length": len(complexity_reduction)}, "Complexity Metrics", "Metric", "Value", "Oranges")
+                    tts_bytes = text_to_speech(complexity_reduction)
+                    st.audio(tts_bytes)
 
                 if scenario_response:
                     st.subheader("📜 Scenario-Based Suggested Response")
                     st.write(f"**{selected_scenario}:**")
                     st.write(scenario_response)
-                    visualize_metrics({"Scenario Response Length": len(scenario_response)}, "Scenario Metrics", "Metric", "Value", "Reds")
 
                 if attachment_analysis:
                     st.subheader("📎 Attachment Analysis")
                     st.write(attachment_analysis)
-                    visualize_metrics({"Attachment Analysis Length": len(attachment_analysis)}, "Attachment Metrics", "Metric", "Value", "Greens")
 
                 if phishing_links:
                     st.subheader("⚠️ Phishing Links Detected")
                     st.write(phishing_links)
-                    visualize_metrics({"Number of Phishing Links": len(phishing_links)}, "Phishing Metrics", "Metric", "Value", "Reds")
 
                 if sensitive_info:
                     st.subheader("⚠️ Sensitive Information Detected")
                     st.json(sensitive_info)
-                    visualize_metrics({"Number of Sensitive Info Types": len(sensitive_info)}, "Sensitive Info Metrics", "Metric", "Value", "Blues")
 
                 if confidentiality:
                     st.subheader("🔐 Confidentiality Rating")
                     st.write(f"Confidentiality Rating: {confidentiality}/5")
-                    visualize_metrics({"Confidentiality Rating": confidentiality}, "Confidentiality Metrics", "Metric", "Value", "Purples")
 
                 if bias_detection:
                     st.subheader("⚖️ Bias Detection")
                     st.write(bias_detection)
-                    visualize_metrics({"Bias Detection Length": len(bias_detection)}, "Bias Metrics", "Metric", "Value", "Oranges")
 
                 if conflict_detection:
                     st.subheader("🚨 Conflict Detection")
@@ -336,14 +377,12 @@ if (email_content or uploaded_file or uploaded_email_file) and st.button("🔍 G
                     st.subheader("📅 Email Metadata")
                     metadata_df = pd.DataFrame(list(email_metadata.items()), columns=["Field", "Value"])
                     st.table(metadata_df)
-                    visualize_metrics({"Number of Metadata Fields": len(email_metadata)}, "Metadata Metrics", "Metric", "Value", "Reds")
 
                 if features["export"]:
                     export_data = {
                         "summary": summary,
                         "response": response,
                         "highlights": highlights,
-                        "clarity_score": clarity_score,
                         "complexity_reduction": complexity_reduction,
                         "scenario_response": scenario_response,
                         "attachment_analysis": attachment_analysis,
@@ -360,6 +399,9 @@ if (email_content or uploaded_file or uploaded_email_file) and st.button("🔍 G
 
                     pdf_data = export_pdf(json.dumps(export_data, indent=4))
                     st.download_button("📥 Download PDF", data=pdf_data, file_name="analysis.pdf", mime="application/pdf")
+
+                    export_csv = pd.DataFrame.from_dict(export_data, orient='index').to_csv().encode('utf-8')
+                    st.download_button("📥 Download CSV", data=export_csv, file_name="analysis.csv", mime="text/csv")
 
     except Exception as e:
         st.error(f"❌ Error: {e}")
