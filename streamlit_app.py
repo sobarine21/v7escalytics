@@ -20,7 +20,6 @@ import pandas as pd
 from gtts import gTTS
 import easyocr
 import openpyxl
-from pptx import Presentation
 
 genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
 
@@ -66,7 +65,7 @@ for feature in features:
 email_content = st.text_area("📩 Paste your email content here:", height=200)
 MAX_EMAIL_LENGTH = 2000
 
-uploaded_file = st.file_uploader("📎 Upload attachment for analysis (optional):", type=["txt", "pdf", "docx", "eml", "msg", "xlsx", "pptx"])
+uploaded_file = st.file_uploader("📎 Upload attachment for analysis (optional):", type=["txt", "pdf", "docx", "eml", "msg", "xlsx"])
 uploaded_email_file = st.file_uploader("📧 Upload email for thread analysis:", type=["eml", "msg"])
 
 scenario_options = [
@@ -152,7 +151,7 @@ def analyze_phishing_links(email_content):
     urls = re.findall(r'(https?://\S+)', email_content)
     for url in urls:
         for keyword in phishing_keywords:
-            if keyword.lower() in url.lower():
+            if keyword.lower() in url.lower()):
                 phishing_links.append(url)
     return phishing_links
 
@@ -199,14 +198,6 @@ def analyze_attachment(file):
                 for row in ws.iter_rows(values_only=True):
                     summary.append(", ".join([str(cell) for cell in row if cell is not None]))
             return "\n".join(summary)
-        elif file.type == "application/vnd.openxmlformats-officedocument.presentationml.presentation":
-            prs = Presentation(file)
-            slides_text = []
-            for slide in prs.slides:
-                for shape in slide.shapes:
-                    if hasattr(shape, "text"):
-                        slides_text.append(shape.text)
-            return "\n".join(slides_text)
         else:
             return "Unsupported file type."
     except Exception as e:
