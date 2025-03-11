@@ -10,3 +10,4 @@ openpyxl
 pandas
 matplotlib
 seaborn
+gtts
