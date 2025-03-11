@@ -255,17 +255,18 @@ def text_to_speech(text):
     tts_bytes.seek(0)
     return tts_bytes
 
-def copy_to_clipboard(text):
-    st.write(f'<textarea id="toCopy" style="position: absolute; left: -1000px;">{text}</textarea><button onclick="copyText()">Copy to Clipboard</button>', unsafe_allow_html=True)
-    st.write("""
+def copy_to_clipboard(text, element_id):
+    st.markdown(f"""
+        <textarea id="{element_id}" style="position: absolute; left: -1000px;">{text}</textarea>
+        <button onclick="copyText('{element_id}')">Copy to Clipboard</button>
         <script>
-        function copyText() {
-            var copyText = document.getElementById("toCopy");
-            copyText.select();
-            document.execCommand("copy");
-        }
+            function copyText(elementId) {{
+                var copyText = document.getElementById(elementId);
+                copyText.select();
+                document.execCommand("copy");
+            }}
         </script>
-    """)
+    """, unsafe_allow_html=True)
 
 if (email_content or uploaded_file or uploaded_email_file) and st.button("🔍 Generate Insights"):
     try:
@@ -329,17 +330,17 @@ if (email_content or uploaded_file or uploaded_email_file) and st.button("🔍 G
                     if summary:
                         with st.expander("📌 Email Summary"):
                             st.write(summary)
-                            copy_to_clipboard(summary)
+                            copy_to_clipboard(summary, "summary_clipboard")
 
                     if response:
                         with st.expander("✉️ Suggested Response"):
                             st.write(response)
-                            copy_to_clipboard(response)
+                            copy_to_clipboard(response, "response_clipboard")
 
                     if highlights:
                         with st.expander("🔑 Key Highlights"):
                             st.write(highlights)
-                            copy_to_clipboard(highlights)
+                            copy_to_clipboard(highlights, "highlights_clipboard")
 
                     if features["sentiment"]:
                         with st.expander("💬 Sentiment Analysis"):
@@ -354,35 +355,35 @@ if (email_content or uploaded_file or uploaded_email_file) and st.button("🔍 G
                     if tasks:
                         with st.expander("📝 Actionable Tasks"):
                             st.write(tasks)
-                            copy_to_clipboard(tasks)
+                            copy_to_clipboard(tasks, "tasks_clipboard")
 
                     if complexity_reduction:
                         with st.expander("🔽 Simplified Explanation"):
                             st.write(complexity_reduction)
                             tts_bytes = text_to_speech(complexity_reduction)
                             st.audio(tts_bytes)
-                            copy_to_clipboard(complexity_reduction)
+                            copy_to_clipboard(complexity_reduction, "complexity_reduction_clipboard")
 
                     if scenario_response:
                         with st.expander("📜 Scenario-Based Suggested Response"):
                             st.write(f"**{selected_scenario}:**")
                             st.write(scenario_response)
-                            copy_to_clipboard(scenario_response)
+                            copy_to_clipboard(scenario_response, "scenario_response_clipboard")
 
                     if attachment_analysis:
                         with st.expander("📎 Attachment Analysis"):
                             st.write(attachment_analysis)
-                            copy_to_clipboard(attachment_analysis)
+                            copy_to_clipboard(attachment_analysis, "attachment_analysis_clipboard")
 
                     if phishing_links:
                         with st.expander("⚠️ Phishing Links Detected"):
                             st.write(phishing_links)
-                            copy_to_clipboard("\n".join(phishing_links))
+                            copy_to_clipboard("\n".join(phishing_links), "phishing_links_clipboard")
 
                     if sensitive_info:
                         with st.expander("⚠️ Sensitive Information Detected"):
                             st.json(sensitive_info)
-                            copy_to_clipboard(json.dumps(sensitive_info, indent=4))
+                            copy_to_clipboard(json.dumps(sensitive_info, indent=4), "sensitive_info_clipboard")
 
                     if confidentiality:
                         with st.expander("🔐 Confidentiality Rating"):
