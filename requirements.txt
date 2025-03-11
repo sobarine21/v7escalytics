@@ -12,4 +12,3 @@ matplotlib
 seaborn
 gtts
 easyocr
-pptx
